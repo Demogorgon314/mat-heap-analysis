@@ -17,6 +17,37 @@ The goal is simple: make Eclipse MAT usable from scripts and agents without rebu
 - An installable skill in `skills/mat-heap-analysis`
 - A bundled runtime for the skill, so end users do not need to clone this repo or run `npm install`
 
+## Install The Skill
+
+One-line global installs:
+
+```bash
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a codex
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a claude-code
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a opencode
+```
+
+The installable skill lives at:
+
+- `skills/mat-heap-analysis`
+
+The bundled runtime used by the skill lives at:
+
+- `skills/mat-heap-analysis/assets/runtime/mat.cjs`
+
+User-facing skill launchers:
+
+```bash
+node skills/mat-heap-analysis/scripts/mat.cjs
+skills/mat-heap-analysis/scripts/mat
+```
+
+If you are maintaining this repo and want to rebuild the packaged skill runtime:
+
+```bash
+npm run build:skill
+```
+
 ## Defaults That Make Local Use Easier
 
 - On macOS, `MAT_HOME` is auto-detected as `/Applications/MemoryAnalyzer.app/Contents/Eclipse` when present
@@ -107,37 +138,6 @@ node dist/cli.js report org.eclipse.mat.api:compare \
   --heap ./new.hprof \
   --option baseline=./old.hprof \
   --allowed-root .
-```
-
-## Install The Skill
-
-Build the publishable skill runtime:
-
-```bash
-npm run build:skill
-```
-
-The installable skill lives at:
-
-- `skills/mat-heap-analysis`
-
-One-line global installs:
-
-```bash
-npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a codex
-npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a claude-code
-npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a opencode
-```
-
-The bundled runtime used by the skill lives at:
-
-- `skills/mat-heap-analysis/assets/runtime/mat.cjs`
-
-User-facing skill launchers:
-
-```bash
-node skills/mat-heap-analysis/scripts/mat.cjs
-skills/mat-heap-analysis/scripts/mat
 ```
 
 ## Release And Validation
