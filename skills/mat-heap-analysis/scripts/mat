@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+LAUNCHER="$SCRIPT_DIR/mat.cjs"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is required to run the bundled MAT CLI." >&2
+  exit 127
+fi
+
+exec node "$LAUNCHER" "$@"
