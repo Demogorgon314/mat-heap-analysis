@@ -14,8 +14,7 @@ The goal is simple: make Eclipse MAT usable from scripts and agents without rebu
 - A local `mat` CLI with focused commands: `doctor`, `index`, `report`, `run`, `query`, `catalog`
 - Stable `--json` output for agents and scripts
 - Progressive help via `mat`, `mat <command> --help`, and `mat catalog --json`
-- A GitHub-installable Codex skill in `skills/mat-heap-analysis`
-- Cross-agent integration docs in `integrations/`
+- An installable skill in `skills/mat-heap-analysis`
 - A bundled runtime for the skill, so end users do not need to clone this repo or run `npm install`
 
 ## Defaults That Make Local Use Easier
@@ -110,7 +109,7 @@ node dist/cli.js report org.eclipse.mat.api:compare \
   --allowed-root .
 ```
 
-## Install As A Codex Skill
+## Install The Skill
 
 Build the publishable skill runtime:
 
@@ -122,12 +121,12 @@ The installable skill lives at:
 
 - `skills/mat-heap-analysis`
 
-After pushing this repo to GitHub, users can install that subdirectory directly:
+One-line global installs:
 
 ```bash
-python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo <owner>/<repo> \
-  --path skills/mat-heap-analysis
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a codex
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a claude-code
+npx skills add https://github.com/Demogorgon314/mat-heap-analysis/tree/main/skills/mat-heap-analysis -g -a opencode
 ```
 
 The bundled runtime used by the skill lives at:
@@ -140,30 +139,6 @@ User-facing skill launchers:
 node skills/mat-heap-analysis/scripts/mat.cjs
 skills/mat-heap-analysis/scripts/mat
 ```
-
-## Use With Claude, Codex, OpenCode, And Similar Tools
-
-The portable integration surface is:
-
-- Runtime entrypoint: `skills/mat-heap-analysis/scripts/mat.cjs`
-- Prompt: `integrations/MAT_AGENT_PROMPT.md`
-- Manifest: `integrations/agent-pack.json`
-
-Recommended integration model:
-
-1. Register a local command that runs `node scripts/mat.cjs`
-2. Give the agent the prompt from `integrations/MAT_AGENT_PROMPT.md`
-3. Let the agent discover capabilities through `catalog --json` and `--help`
-
-Tool-specific notes live in:
-
-- `integrations/codex.md`
-- `integrations/claude.md`
-- `integrations/opencode.md`
-
-The full cross-agent overview is in:
-
-- `integrations/README.md`
 
 ## Release And Validation
 
@@ -192,8 +167,8 @@ If that validator fails with `ModuleNotFoundError: No module named 'yaml'`, inst
 
 - `src/`: TypeScript CLI and MAT execution core
 - `test/`: CLI and service tests
-- `skills/mat-heap-analysis/`: GitHub-installable Codex skill
-- `integrations/`: vendor-neutral prompt, manifest, and tool-specific guides
+- `skills/mat-heap-analysis/`: installable skill package
+- `integrations/`: optional prompt, manifest, and tool-specific notes
 - `scripts/`: build and release helpers
 
 ## Notes
