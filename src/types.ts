@@ -99,6 +99,122 @@ export interface MatRunCommandSuccess {
   stderr_tail: string;
 }
 
+export interface AnalysisArtifact {
+  kind: "workspace" | "report_dir" | "report_zip" | "query_dir" | "query_zip" | "result_txt" | "csv" | "artifact";
+  path: string;
+}
+
+export interface HotspotEntry {
+  label: string;
+  object_id: string | null;
+  object_count: number | null;
+  shallow_heap_bytes: number | null;
+  retained_heap_bytes: number | null;
+  retained_percent: number | null;
+}
+
+export interface HistogramEntry extends HotspotEntry {}
+
+export interface LeakAccumulationStep {
+  label: string;
+  reference_label: string | null;
+  object_id: string | null;
+  shallow_heap_bytes: number | null;
+  retained_heap_bytes: number | null;
+}
+
+export interface LeakSuspectFinding {
+  suspect_id: string;
+  headline: string;
+  summary: string;
+  retained_heap_bytes: number | null;
+  retained_percent: number | null;
+  object_label: string | null;
+  object_id: string | null;
+  accumulation_path: LeakAccumulationStep[];
+  dominant_classes: HistogramEntry[];
+  keywords: string[];
+  thread_name: string | null;
+  stack_preview: string[];
+}
+
+export interface QuerySectionSummary {
+  heading: string;
+  table_headers: string[];
+  rows: string[][];
+  row_object_ids: Array<string | null>;
+  row_count: number;
+  preformatted: string | null;
+  preview: string[];
+}
+
+export interface ParsedHtmlArtifact {
+  title: string;
+  source: string;
+  summary_text: string;
+  sections: QuerySectionSummary[];
+  entries: string[];
+}
+
+export interface CompareDeltaEntry {
+  label: string;
+  object_count_delta: number | null;
+  shallow_heap_delta_bytes: number | null;
+  note: string | null;
+}
+
+export interface MatTriageSuccess {
+  status: "ok";
+  heap_path: string;
+  workspace_dir: string;
+  summary: string;
+  warnings: string[];
+  hotspots: HotspotEntry[];
+  dominator_classes: HotspotEntry[];
+  dominant_packages: HotspotEntry[];
+  histogram: HistogramEntry[];
+  suspects: LeakSuspectFinding[];
+  next_steps: string[];
+  artifacts: AnalysisArtifact[];
+}
+
+export interface MatInspectObjectSuccess {
+  status: "ok";
+  heap_path: string;
+  object_id: string;
+  workspace_dir: string;
+  summary: string;
+  warnings: string[];
+  gc_root_path: LeakAccumulationStep[];
+  dominators: HotspotEntry[];
+  retained_objects: HistogramEntry[];
+  next_steps: string[];
+  artifacts: AnalysisArtifact[];
+}
+
+export interface MatCompareSuccess {
+  status: "ok";
+  heap_path: string;
+  baseline_heap_path: string;
+  workspace_dir: string;
+  summary: string;
+  warnings: string[];
+  histogram_delta: CompareDeltaEntry[];
+  next_steps: string[];
+  artifacts: AnalysisArtifact[];
+}
+
+export interface MatArtifactPreviewSuccess {
+  status: "ok";
+  artifact_path: string;
+  artifact_type: "directory" | "zip" | "html" | "text";
+  selected_entry: string | null;
+  entries: string[];
+  preview: string[];
+  truncated: boolean;
+  summary: string;
+}
+
 export interface CatalogCommandEntry {
   name: string;
   summary: string;
@@ -144,6 +260,10 @@ export type CommandResponse =
   | MatIndexStatusSuccess
   | MatOqlSpecSuccess
   | MatRunCommandSuccess
+  | MatTriageSuccess
+  | MatInspectObjectSuccess
+  | MatCompareSuccess
+  | MatArtifactPreviewSuccess
   | CatalogSuccess
   | MatErrorResponse;
 

@@ -1,7 +1,7 @@
 interface:
   display_name: "MAT Heap Analysis"
   short_description: "Analyze Java heap dumps with the bundled MAT CLI"
-  default_prompt: "Use $mat-heap-analysis to inspect a Java heap dump with the bundled MAT CLI. Resolve launchers relative to the current skill directory, prefer the scripts/mat wrapper over cwd-relative node scripts/mat.cjs, and start with doctor, index, overview, and suspects."
+  default_prompt: "Use $mat-heap-analysis to inspect a Java heap dump with the bundled MAT CLI. Resolve launchers relative to the current skill directory, prefer the scripts/mat wrapper over cwd-relative node scripts/mat.cjs, start with doctor and triage, then use inspect-object, compare, and show-artifact for follow-up."
 
 policy:
   allow_implicit_invocation: true

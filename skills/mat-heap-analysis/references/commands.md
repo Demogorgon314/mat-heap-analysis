@@ -22,14 +22,15 @@ For a single heap in one directory, you usually do not need `--allowed-root`. Ad
 ## First-pass triage
 
 ```bash
-"$skill_dir/scripts/mat" index --heap ./heap.hprof
-"$skill_dir/scripts/mat" report org.eclipse.mat.api:overview --heap ./heap.hprof
-"$skill_dir/scripts/mat" report org.eclipse.mat.api:suspects --heap ./heap.hprof
+"$skill_dir/scripts/mat" triage --heap ./heap.hprof
+"$skill_dir/scripts/mat" triage --heap ./heap.hprof --top 5 --json
 ```
 
 ## Targeted commands
 
 ```bash
+"$skill_dir/scripts/mat" inspect-object --heap ./heap.hprof --object-id 0x12345678
+"$skill_dir/scripts/mat" show-artifact ./heap_Leak_Suspects.zip
 "$skill_dir/scripts/mat" run histogram --heap ./heap.hprof
 "$skill_dir/scripts/mat" run thread_overview --heap ./heap.hprof
 "$skill_dir/scripts/mat" run path2gc --heap ./heap.hprof --args 0x12345678
@@ -45,9 +46,9 @@ For a single heap in one directory, you usually do not need `--allowed-root`. Ad
 ## Multi-directory and compare workflows
 
 ```bash
-"$skill_dir/scripts/mat" report org.eclipse.mat.api:compare \
+"$skill_dir/scripts/mat" compare \
   --heap ./new.hprof \
-  --option baseline=../baseline/old.hprof \
+  --baseline ../baseline/old.hprof \
   --allowed-root . \
   --allowed-root ../baseline
 ```
@@ -71,4 +72,5 @@ For a single heap in one directory, you usually do not need `--allowed-root`. Ad
 
 ## Concurrency note
 
-- Prefer sequential `run` and `query` commands on the same heap when you care about the generated query artifacts. MAT reuses the same query output directory.
+- High-level commands such as `triage`, `inspect-object`, and `compare` isolate their MAT workspaces automatically.
+- Prefer sequential `run` and `query` commands on the same heap when you care about the generated low-level query artifacts. MAT reuses the same query output directory.

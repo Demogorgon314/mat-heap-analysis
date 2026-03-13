@@ -2,15 +2,19 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type {
+  MatArtifactPreviewSuccess,
+  MatCompareSuccess,
   CatalogCommandEntry,
   CatalogSuccess,
   CommandResponse,
   MatErrorResponse,
   MatHealthcheckSuccess,
   MatIndexStatusSuccess,
+  MatInspectObjectSuccess,
   MatOqlQuerySuccess,
   MatParseReportSuccess,
-  MatRunCommandSuccess
+  MatRunCommandSuccess,
+  MatTriageSuccess
 } from "../types.js";
 
 const MAX_OUTPUT_LINES = 200;
@@ -156,6 +160,46 @@ function renderSuccess(command: string, response: Exclude<CommandResponse, MatEr
         .filter(Boolean)
         .join("\n\n");
     }
+    case "triage": {
+      const data = response as MatTriageSuccess;
+      return [
+        data.summary,
+        renderFlatFindings("Hotspots", data.hotspots.map((item) => `${item.label} (${formatHeapBytes(item.retained_heap_bytes)} retained)`)),
+        renderFlatFindings("Leak Suspects", data.suspects.map((item) => item.headline)),
+        renderFlatFindings("Histogram", data.histogram.map((item) => `${item.label} (${formatHeapBytes(item.retained_heap_bytes)} retained)`)),
+        renderFlatFindings("Next Steps", data.next_steps),
+        renderWarnings(data.warnings),
+        renderAnalysisArtifacts(data.artifacts)
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    case "inspect-object": {
+      const data = response as MatInspectObjectSuccess;
+      return [
+        data.summary,
+        renderFlatFindings("GC Root Path", data.gc_root_path.map((item) => item.label)),
+        renderFlatFindings("Dominators", data.dominators.map((item) => `${item.label} (${formatHeapBytes(item.retained_heap_bytes)} retained)`)),
+        renderFlatFindings("Retained Objects", data.retained_objects.map((item) => `${item.label} (${formatHeapBytes(item.shallow_heap_bytes)} shallow)`)),
+        renderFlatFindings("Next Steps", data.next_steps),
+        renderWarnings(data.warnings),
+        renderAnalysisArtifacts(data.artifacts)
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    case "compare": {
+      const data = response as MatCompareSuccess;
+      return [
+        data.summary,
+        renderFlatFindings("Histogram Delta", data.histogram_delta.map((item) => `${item.label} (${formatDelta(item.object_count_delta)} objects)`)),
+        renderFlatFindings("Next Steps", data.next_steps),
+        renderWarnings(data.warnings),
+        renderAnalysisArtifacts(data.artifacts)
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
     case "query": {
       const data = response as MatOqlQuerySuccess;
       return [
@@ -167,6 +211,17 @@ function renderSuccess(command: string, response: Exclude<CommandResponse, MatEr
         renderPreview("Result preview", data.result_preview),
         renderTail("stdout", data.stdout_tail),
         renderTail("stderr", data.stderr_tail)
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    case "show-artifact": {
+      const data = response as MatArtifactPreviewSuccess;
+      return [
+        data.summary,
+        data.selected_entry ? `Selected entry: ${data.selected_entry}` : "",
+        renderPathList("Entries", data.entries),
+        renderPreview("Preview", data.preview)
       ]
         .filter(Boolean)
         .join("\n\n");
@@ -282,6 +337,47 @@ function renderTail(title: string, text: string): string {
     return "";
   }
   return `[${title}]\n${text.trimEnd()}`;
+}
+
+function renderFlatFindings(title: string, lines: string[]): string {
+  if (lines.length === 0) {
+    return "";
+  }
+  return [title + ":", ...lines.map((line) => `  ${line}`)].join("\n");
+}
+
+function renderWarnings(warnings: string[]): string {
+  if (warnings.length === 0) {
+    return "";
+  }
+  return ["Warnings:", ...warnings.map((item) => `  ${item}`)].join("\n");
+}
+
+function renderAnalysisArtifacts(artifacts: Array<{ kind: string; path: string }>): string {
+  if (artifacts.length === 0) {
+    return "";
+  }
+  return ["Artifacts:", ...artifacts.map((item) => `  ${item.kind}: ${item.path}`)].join("\n");
+}
+
+function formatHeapBytes(value: number | null): string {
+  if (value === null || value === undefined) {
+    return "unknown";
+  }
+  if (value >= 1024 * 1024) {
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  if (value >= 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+  return `${value} B`;
+}
+
+function formatDelta(value: number | null): string {
+  if (value === null || value === undefined) {
+    return "unknown";
+  }
+  return `${value >= 0 ? "+" : ""}${value}`;
 }
 
 function applyOverflow(body: string, footer: string, overflowStore: OverflowStore): string {

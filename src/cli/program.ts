@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import path from "node:path";
 import { Command, CommanderError } from "commander";
 import { findCliCommand, getCatalog, CLI_COMMANDS } from "../catalog.js";
 import { loadConfig } from "../config.js";
+import { AnalysisService } from "../core/analysisService.js";
 import { MatService, type MatServiceDeps } from "../core/service.js";
 import { createOverflowStore, formatHumanResponse, formatJsonResponse, renderCommandHelp, renderTopLevelHelp, renderUsageError, type OverflowStore } from "./format.js";
 import { MatCliError, type CommandResponse } from "../types.js";
@@ -62,6 +64,28 @@ interface DoctorOptions extends SharedRuntimeOptions {
 }
 
 interface CatalogOptions {
+  json?: boolean;
+}
+
+interface TriageOptions extends SharedRuntimeOptions {
+  heap: string;
+  top?: number;
+}
+
+interface InspectObjectOptions extends SharedRuntimeOptions {
+  heap: string;
+  objectId?: string;
+}
+
+interface CompareOptions extends SharedRuntimeOptions {
+  heap: string;
+  baseline?: string;
+  top?: number;
+}
+
+interface ShowArtifactOptions {
+  entry?: string;
+  previewLines?: number;
   json?: boolean;
 }
 
@@ -169,6 +193,64 @@ function buildProgram(
     onExitCode(emitResult(io, overflowStore, "report", response, now() - startedAt, opts.json ?? false));
   });
 
+  const triage = program.command("triage").description("Run first-pass heap triage and summarize the main findings.").helpOption(false);
+  addSharedOptions(triage, true);
+  triage.option("--heap <path>", "Heap dump path");
+  triage.option("--top <n>", "Maximum findings to keep per section", parseIntOption);
+  triage.action(async (opts: TriageOptions) => {
+    const startedAt = now();
+    assertRequiredOption(opts.heap, "triage requires --heap <path>.");
+    const service = createAnalysisService(env, opts, matServiceDeps);
+    const response = await service.triage({
+      heap_path: opts.heap,
+      top: opts.top,
+      xmx_mb: opts.xmxMb,
+      timeout_sec: opts.timeoutSec
+    });
+    onExitCode(emitResult(io, overflowStore, "triage", response, now() - startedAt, opts.json ?? false));
+  });
+
+  const inspectObject = program.command("inspect-object").description("Inspect one object through GC-root and dominator paths.").helpOption(false);
+  addSharedOptions(inspectObject, true);
+  inspectObject.option("--heap <path>", "Heap dump path");
+  inspectObject.option("--object-id <id>", "MAT object id, for example 0xc2300098");
+  inspectObject.action(async (opts: InspectObjectOptions) => {
+    const startedAt = now();
+    assertRequiredOption(opts.heap, "inspect-object requires --heap <path>.");
+    assertRequiredOption(opts.objectId, "inspect-object requires --object-id <id>.");
+    const service = createAnalysisService(env, opts, matServiceDeps);
+    const response = await service.inspectObject({
+      heap_path: opts.heap,
+      object_id: opts.objectId,
+      xmx_mb: opts.xmxMb,
+      timeout_sec: opts.timeoutSec
+    });
+    onExitCode(emitResult(io, overflowStore, "inspect-object", response, now() - startedAt, opts.json ?? false));
+  });
+
+  const compare = program.command("compare").description("Compare two heaps and summarize histogram deltas.").helpOption(false);
+  addSharedOptions(compare, true);
+  compare.option("--heap <path>", "New heap dump path");
+  compare.option("--baseline <path>", "Baseline heap dump path");
+  compare.option("--top <n>", "Maximum findings to keep", parseIntOption);
+  compare.action(async (opts: CompareOptions) => {
+    const startedAt = now();
+    assertRequiredOption(opts.heap, "compare requires --heap <path>.");
+    assertRequiredOption(opts.baseline, "compare requires --baseline <path>.");
+    const service = createAnalysisService(env, opts, matServiceDeps, [
+      path.dirname(opts.heap),
+      path.dirname(opts.baseline)
+    ]);
+    const response = await service.compare({
+      heap_path: opts.heap,
+      baseline_heap_path: opts.baseline,
+      top: opts.top,
+      xmx_mb: opts.xmxMb,
+      timeout_sec: opts.timeoutSec
+    });
+    onExitCode(emitResult(io, overflowStore, "compare", response, now() - startedAt, opts.json ?? false));
+  });
+
   const query = program.command("query").description("Execute a single MAT OQL query.").helpOption(false);
   addSharedOptions(query, true);
   query.option("--heap <path>", "Heap dump path");
@@ -232,6 +314,21 @@ function buildProgram(
     onExitCode(emitResult(io, overflowStore, "index", response, now() - startedAt, opts.json ?? false));
   });
 
+  const showArtifact = program.command("show-artifact").description("Preview a MAT artifact directory, zip, or text output.").helpOption(false);
+  showArtifact.argument("<artifactPath>", "Artifact path");
+  showArtifact.option("--entry <path>", "Zip or directory entry to preview");
+  showArtifact.option("--preview-lines <n>", "Result preview line limit", parseIntOption);
+  showArtifact.option("--json", "Emit JSON output");
+  showArtifact.action((artifactPath: string, opts: ShowArtifactOptions) => {
+    const startedAt = now();
+    const service = createAnalysisService(env, { previewLines: opts.previewLines }, matServiceDeps);
+    const response = service.showArtifact({
+      artifact_path: artifactPath,
+      entry: opts.entry
+    });
+    onExitCode(emitResult(io, overflowStore, "show-artifact", response, now() - startedAt, opts.json ?? false));
+  });
+
   const catalog = program.command("catalog").description("Show machine-readable command/report catalog.").helpOption(false);
   catalog.argument("[section]", "all | commands | reports | oql | errors", "all");
   catalog.option("--json", "Emit JSON output");
@@ -259,9 +356,15 @@ function addSharedOptions(command: Command, includeAllowedRoot: boolean): void {
   command.option("--json", "Emit JSON output");
 }
 
-function createService(env: NodeJS.ProcessEnv, opts: SharedRuntimeOptions, matServiceDeps: Partial<MatServiceDeps> | undefined): MatService {
+function createService(
+  env: NodeJS.ProcessEnv,
+  opts: SharedRuntimeOptions,
+  matServiceDeps: Partial<MatServiceDeps> | undefined,
+  extraAllowedRoots: string[] = []
+): MatService {
+  const allowedRoots = mergeAllowedRoots(opts.allowedRoot, extraAllowedRoots);
   const config = loadConfig(env, {
-    allowedRoots: opts.allowedRoot,
+    allowedRoots,
     heapPath: resolveHeapPath(opts),
     matHome: opts.matHome,
     matLauncher: opts.matLauncher,
@@ -272,6 +375,27 @@ function createService(env: NodeJS.ProcessEnv, opts: SharedRuntimeOptions, matSe
     stdioTailChars: opts.stdioTailChars
   });
   return new MatService(config, matServiceDeps);
+}
+
+function createAnalysisService(
+  env: NodeJS.ProcessEnv,
+  opts: SharedRuntimeOptions,
+  matServiceDeps: Partial<MatServiceDeps> | undefined,
+  extraAllowedRoots: string[] = []
+): AnalysisService {
+  const allowedRoots = mergeAllowedRoots(opts.allowedRoot, extraAllowedRoots);
+  const config = loadConfig(env, {
+    allowedRoots,
+    heapPath: resolveHeapPath(opts),
+    matHome: opts.matHome,
+    matLauncher: opts.matLauncher,
+    javaPath: opts.javaPath,
+    xmxMb: opts.xmxMb,
+    timeoutSec: opts.timeoutSec,
+    previewLines: opts.previewLines,
+    stdioTailChars: opts.stdioTailChars
+  });
+  return new AnalysisService(config, matServiceDeps);
 }
 
 function resolveHeapPath(opts: SharedRuntimeOptions): string | undefined {
@@ -483,4 +607,9 @@ function resolveHelpTarget(argv: string[]) {
 function buildFailureHelpText(argv: string[]): string {
   const target = resolveHelpTarget(argv);
   return target ? renderCommandHelp(target) : renderTopLevelHelp(CLI_COMMANDS);
+}
+
+function mergeAllowedRoots(existing: string[] | undefined, extraAllowedRoots: string[]): string[] | undefined {
+  const merged = [...(existing ?? []), ...extraAllowedRoots].filter((item) => item.trim().length > 0);
+  return merged.length > 0 ? [...new Set(merged)] : undefined;
 }

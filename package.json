@@ -20,10 +20,12 @@
     "test": "tsx --test test/**/*.test.ts"
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "commander": "^13.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.15.3",
     "esbuild": "^0.25.1",
     "tsx": "^4.20.5",

@@ -94,9 +94,47 @@ export const CLI_COMMANDS: CatalogCommandEntry[] = [
       "mat report <report-id> --heap <path> [--option key=value ...] [--allowed-root <dir>] [--json]",
     examples: [
       "mat report org.eclipse.mat.api:suspects --heap ./heap.hprof",
-      "mat report org.eclipse.mat.api:compare --heap ./new.hprof --option baseline=../baseline/old.hprof --allowed-root . --allowed-root ../baseline"
+      "mat report org.eclipse.mat.api:compare --heap ./new.hprof --option snapshot2=../baseline/old.hprof --allowed-root . --allowed-root ../baseline"
     ],
     related: ["catalog reports", "query", "run", "index"]
+  },
+  {
+    name: "triage",
+    summary: "Run first-pass memory triage and summarize the main hotspots and leak suspects.",
+    usage: "mat triage --heap <path> [--top <n>] [--allowed-root <dir>] [--json]",
+    examples: [
+      "mat triage --heap ./heap.hprof",
+      "mat triage --heap ./heap.hprof --top 5 --json"
+    ],
+    related: ["inspect-object", "compare", "show-artifact"]
+  },
+  {
+    name: "inspect-object",
+    summary: "Trace one object through GC roots, dominators, and retained-set follow-up queries.",
+    usage: "mat inspect-object --heap <path> --object-id <id> [--allowed-root <dir>] [--json]",
+    examples: [
+      "mat inspect-object --heap ./heap.hprof --object-id 0xc2300098"
+    ],
+    related: ["triage", "run", "show-artifact"]
+  },
+  {
+    name: "compare",
+    summary: "Compare two heaps and summarize class histogram deltas.",
+    usage: "mat compare --heap <new> --baseline <old> [--top <n>] [--allowed-root <dir>] [--json]",
+    examples: [
+      "mat compare --heap ./new.hprof --baseline ../baseline/old.hprof --allowed-root . --allowed-root ../baseline"
+    ],
+    related: ["triage", "report", "show-artifact"]
+  },
+  {
+    name: "show-artifact",
+    summary: "Preview a MAT artifact directory, zip, HTML page, or text file.",
+    usage: "mat show-artifact <path> [--entry <zip-entry>] [--preview-lines <n>] [--json]",
+    examples: [
+      "mat show-artifact ./heap_Leak_Suspects.zip",
+      "mat show-artifact ./heap_Query.zip --entry index.html"
+    ],
+    related: ["triage", "inspect-object", "compare"]
   },
   {
     name: "query",
@@ -162,7 +200,7 @@ export const REPORT_CATALOG: CatalogReportEntry[] = [
     id: "org.eclipse.mat.api:compare",
     summary: "Compare two heap dumps using baseline/snapshot2 options.",
     examples: [
-      "mat report org.eclipse.mat.api:compare --heap ./new.hprof --option baseline=../baseline/old.hprof --allowed-root . --allowed-root ../baseline"
+      "mat report org.eclipse.mat.api:compare --heap ./new.hprof --option snapshot2=../baseline/old.hprof --allowed-root . --allowed-root ../baseline"
     ]
   },
   {

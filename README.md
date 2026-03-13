@@ -11,7 +11,7 @@ The goal is simple: make Eclipse MAT usable from scripts and agents without rebu
 
 ## What you get
 
-- A local `mat` CLI with focused commands: `doctor`, `index`, `report`, `run`, `query`, `catalog`
+- A local `mat` CLI with focused low-level and high-level commands: `doctor`, `index`, `report`, `run`, `query`, `catalog`, `triage`, `inspect-object`, `compare`, `show-artifact`
 - Stable `--json` output for agents and scripts
 - Progressive help via `mat`, `mat <command> --help`, and `mat catalog --json`
 - An installable skill in `skills/mat-heap-analysis`
@@ -88,17 +88,15 @@ node dist/cli.js doctor --mat-home /path/to/MemoryAnalyzer
 Run a first analysis pass on a heap dump:
 
 ```bash
-node dist/cli.js index --heap ./heap.hprof
-node dist/cli.js report org.eclipse.mat.api:overview --heap ./heap.hprof
-node dist/cli.js report org.eclipse.mat.api:suspects --heap ./heap.hprof
+node dist/cli.js triage --heap ./heap.hprof
 ```
 
 Follow up with targeted analysis:
 
 ```bash
-node dist/cli.js run histogram --heap ./heap.hprof
-node dist/cli.js query --heap ./heap.hprof --query 'SELECT s FROM INSTANCEOF java.lang.String s' --json
-node dist/cli.js run path2gc --heap ./heap.hprof --args 0x12345678
+node dist/cli.js inspect-object --heap ./heap.hprof --object-id 0x12345678
+node dist/cli.js compare --heap ./new.hprof --baseline ./old.hprof
+node dist/cli.js show-artifact ./heap_Leak_Suspects.zip
 ```
 
 Discover capabilities:
@@ -116,6 +114,10 @@ node dist/cli.js query --help
 - `report`: run a predefined MAT report such as `overview` or `suspects`
 - `run`: run a named MAT analysis command such as `histogram` or `path2gc`
 - `query`: run a single OQL query
+- `triage`: run first-pass hotspot and leak-suspect analysis
+- `inspect-object`: trace one object through GC roots and dominators
+- `compare`: compare two heaps and summarize histogram deltas
+- `show-artifact`: preview generated report/query artifacts without shelling out to `unzip`
 - `catalog`: expose a machine-readable command and capability directory
 
 Use `--json` when another tool or follow-up step will parse the result.
@@ -125,18 +127,18 @@ Use `--json` when another tool or follow-up step will parse the result.
 Basic usage:
 
 ```bash
-node dist/cli.js report org.eclipse.mat.api:suspects --heap ./heap.hprof
-node dist/cli.js run histogram --heap ./heap.hprof --json
-node dist/cli.js query --heap ./heap.hprof --query-file ./query.oql
+node dist/cli.js triage --heap ./heap.hprof --json
+node dist/cli.js inspect-object --heap ./heap.hprof --object-id 0xc2300098
+node dist/cli.js show-artifact ./heap_Query.zip --entry index.html
 node dist/cli.js catalog reports --json
 ```
 
 When analyzing heaps across multiple directories, or using path-based report options such as `baseline`, add explicit allow roots:
 
 ```bash
-node dist/cli.js report org.eclipse.mat.api:compare \
+node dist/cli.js compare \
   --heap ./new.hprof \
-  --option baseline=./old.hprof \
+  --baseline ./old.hprof \
   --allowed-root .
 ```
 

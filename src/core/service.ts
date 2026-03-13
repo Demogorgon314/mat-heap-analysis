@@ -96,7 +96,7 @@ export class MatService {
       const heapPath = ensureAllowedHeapPath(input.heap_path, this.config.allowedRoots);
       const preparedHeap = prepareHeapForExecution(heapPath, this.config.matDataDir);
       const launcher = this.resolveLauncher();
-      const options = this.prepareExecutionOptions(this.sanitizeOptions(input.options ?? {}));
+      const options = this.prepareExecutionOptions(this.sanitizeOptions(this.normalizeReportOptions(reportId, input.options ?? {})));
       const startedAtMs = Date.now();
       const command = buildParseReportCommand(
         {
@@ -328,6 +328,24 @@ export class MatService {
       sanitized[key] = value;
     }
     return sanitized;
+  }
+
+  private normalizeReportOptions(
+    reportId: string,
+    options: Record<string, string | number | boolean>
+  ): Record<string, string | number | boolean> {
+    if (reportId !== "org.eclipse.mat.api:compare") {
+      return options;
+    }
+
+    if (!("baseline" in options) || "snapshot2" in options) {
+      return options;
+    }
+
+    return {
+      ...options,
+      snapshot2: options.baseline
+    };
   }
 
   private prepareExecutionOptions(options: Record<string, string | number | boolean>): Record<string, string | number | boolean> {
