@@ -12,13 +12,7 @@ const requiredFiles = [
   path.join(skillDir, "assets", "runtime", "mat.cjs"),
   path.join(skillDir, "references", "commands.md"),
   path.join(skillDir, "scripts", "mat"),
-  path.join(skillDir, "scripts", "mat.cjs"),
-  path.join(repoRoot, "integrations", "agent-pack.json"),
-  path.join(repoRoot, "integrations", "README.md"),
-  path.join(repoRoot, "integrations", "MAT_AGENT_PROMPT.md"),
-  path.join(repoRoot, "integrations", "codex.md"),
-  path.join(repoRoot, "integrations", "claude.md"),
-  path.join(repoRoot, "integrations", "opencode.md")
+  path.join(skillDir, "scripts", "mat.cjs")
 ];
 
 for (const filePath of requiredFiles) {

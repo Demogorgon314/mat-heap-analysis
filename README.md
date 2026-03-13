@@ -168,11 +168,10 @@ If that validator fails with `ModuleNotFoundError: No module named 'yaml'`, inst
 - `src/`: TypeScript CLI and MAT execution core
 - `test/`: CLI and service tests
 - `skills/mat-heap-analysis/`: installable skill package
-- `integrations/`: optional prompt, manifest, and tool-specific notes
 - `scripts/`: build and release helpers
 
 ## Notes
 
 - The CLI is local-first: it shells out to a locally installed Eclipse MAT
-- The agent integrations are wrappers around the same runtime, not separate implementations
+- The installable skill is a thin wrapper around the same local runtime
 - For single-heap workflows on macOS, the default configuration should usually be enough
