@@ -1,47 +1,51 @@
 # MAT Heap Analysis Commands
 
-Use these examples with the bundled entrypoint:
+Resolve these examples relative to the directory that contains the current `SKILL.md`.
+
+Let `skill_dir` be that directory. Prefer the self-locating wrapper:
 
 ```bash
-node scripts/mat.cjs
+"$skill_dir/scripts/mat"
 ```
+
+Do not assume `scripts/mat.cjs` is relative to the user repo's current working directory.
 
 For a single heap in one directory, you usually do not need `--allowed-root`. Add it only when the workflow spans more than the main heap directory.
 
 ## Environment check
 
 ```bash
-node scripts/mat.cjs doctor
-node scripts/mat.cjs doctor --mat-home /custom/MemoryAnalyzer
+"$skill_dir/scripts/mat" doctor
+"$skill_dir/scripts/mat" doctor --mat-home /custom/MemoryAnalyzer
 ```
 
 ## First-pass triage
 
 ```bash
-node scripts/mat.cjs index --heap ./heap.hprof
-node scripts/mat.cjs report org.eclipse.mat.api:overview --heap ./heap.hprof
-node scripts/mat.cjs report org.eclipse.mat.api:suspects --heap ./heap.hprof
+"$skill_dir/scripts/mat" index --heap ./heap.hprof
+"$skill_dir/scripts/mat" report org.eclipse.mat.api:overview --heap ./heap.hprof
+"$skill_dir/scripts/mat" report org.eclipse.mat.api:suspects --heap ./heap.hprof
 ```
 
 ## Targeted commands
 
 ```bash
-node scripts/mat.cjs run histogram --heap ./heap.hprof
-node scripts/mat.cjs run thread_overview --heap ./heap.hprof
-node scripts/mat.cjs run path2gc --heap ./heap.hprof --args 0x12345678
+"$skill_dir/scripts/mat" run histogram --heap ./heap.hprof
+"$skill_dir/scripts/mat" run thread_overview --heap ./heap.hprof
+"$skill_dir/scripts/mat" run path2gc --heap ./heap.hprof --args 0x12345678
 ```
 
 ## OQL
 
 ```bash
-node scripts/mat.cjs query --heap ./heap.hprof --query 'SELECT s FROM INSTANCEOF java.lang.String s'
-node scripts/mat.cjs query --heap ./heap.hprof --query-file ./query.oql --json
+"$skill_dir/scripts/mat" query --heap ./heap.hprof --query 'SELECT s FROM INSTANCEOF java.lang.String s'
+"$skill_dir/scripts/mat" query --heap ./heap.hprof --query-file ./query.oql --json
 ```
 
 ## Multi-directory and compare workflows
 
 ```bash
-node scripts/mat.cjs report org.eclipse.mat.api:compare \
+"$skill_dir/scripts/mat" report org.eclipse.mat.api:compare \
   --heap ./new.hprof \
   --option baseline=../baseline/old.hprof \
   --allowed-root . \
@@ -51,19 +55,19 @@ node scripts/mat.cjs report org.eclipse.mat.api:compare \
 ## Capability discovery
 
 ```bash
-node scripts/mat.cjs
-node scripts/mat.cjs query --help
-node scripts/mat.cjs catalog
-node scripts/mat.cjs catalog commands --json
-node scripts/mat.cjs catalog oql
+"$skill_dir/scripts/mat"
+"$skill_dir/scripts/mat" query --help
+"$skill_dir/scripts/mat" catalog
+"$skill_dir/scripts/mat" catalog commands --json
+"$skill_dir/scripts/mat" catalog oql
 ```
 
 ## Common error recovery
 
-- `MAT_NOT_FOUND`: run `node scripts/mat.cjs doctor --mat-home ...`
+- `MAT_NOT_FOUND`: run `"$skill_dir/scripts/mat" doctor --mat-home ...`
 - `HEAP_NOT_FOUND`: fix `--heap` or widen `--allowed-root` for extra heap directories
 - `WRITE_PERMISSION_DENIED`: the CLI now stages the heap automatically for report/query/run; if this still appears, inspect filesystem permissions and MAT stderr
-- `INVALID_QUERY`: use `node scripts/mat.cjs catalog oql`
+- `INVALID_QUERY`: use `"$skill_dir/scripts/mat" catalog oql`
 
 ## Concurrency note
 
